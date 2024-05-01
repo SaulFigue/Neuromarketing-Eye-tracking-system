@@ -4,6 +4,6 @@ opencv_python==4.6.0.66
 torch==1.9.0
 albumentations==1.1.0
 matplotlib==3.4.3
-mediapipe==0.8.7.1
+mediapipe
 pytorch_lightning==1.4.9
 PyYAML==6.0
