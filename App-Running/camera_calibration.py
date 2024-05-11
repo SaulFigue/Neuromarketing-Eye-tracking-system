@@ -47,7 +47,7 @@ def split_video(video_path):
     
         if success:
             # cv2.imwrite(f'C:/Users/Saul/Documents/gaze-tracking-pipeline-main/frames/frame_{frameNr}.png', frame)
-            cv2.imwrite(f'./frames/frame_{frameNr}.png', frame)
+            cv2.imwrite(f'./frames/frame_{str(frameNr)}.png', frame)
     
         else:
             break
@@ -57,7 +57,7 @@ def split_video(video_path):
     capture.release()
 
 # def calibration(image_path, every_nth: int = 1, debug: bool = False, chessboard_grid_size=(7, 7)):
-def calibration(image_path, every_nth: int = 1, debug: bool = False, chessboard_grid_size=(8, 7)):    
+def calibration(image_path, every_nth: int = 1, debug: bool = False, chessboard_grid_size=(8, 6)):    
     """
     Perform camera calibration on the previously collected images.
     Creates `calibration_matrix.yaml` with the camera intrinsic matrix and the distortion coefficients.
@@ -135,7 +135,7 @@ if __name__ == '__main__':
     parser.add_argument("--record", type=bool, default=False)
     parser.add_argument("--split", type=bool, default=False)
     parser.add_argument("--calibrate", type=bool, default=False)
-    parser.add_argument("--video_path", type=bool, default=False, help='Add the ruth path of the video to be splitted')
+    parser.add_argument("--video_path", type=str, default=False, help='Add the ruth path of the video to be splitted')
     args = parser.parse_args()
 
     if args.record==True:
@@ -148,6 +148,6 @@ if __name__ == '__main__':
 
     elif args.calibrate==True:
         # 3. run calibration on images to extract camera matrix, rotation matrix, distant coefficient
-        calibration('./frames2', 30, debug=True)
+        calibration('./frames', 30, debug=True)
 
     

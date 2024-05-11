@@ -1,6 +1,8 @@
 import collections
 import time
 from argparse import ArgumentParser
+import os
+import csv
 
 import albumentations as A
 import cv2
@@ -498,7 +500,7 @@ WINDOW_NAME = 'laser pointer preview'
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def main(calibration_matrix_path: str, monitor_mm=None, monitor_pixels=None, model=None, visualize_preprocessing=False, visualize_laser_pointer=True, visualize_3d=False):
+def main(calibration_matrix_path: str, monitor_mm=None, monitor_pixels=None, model=None, visualize_preprocessing=False, visualize_background=True, visualize_3d=False, background=None, laser=True):
     # setup webcam
     # source = WebcamSource(width=1366, height=768, fps=60, buffer_size=10)
     source = WebcamSource(width=1280, height=720, fps=60, buffer_size=10)
@@ -537,6 +539,10 @@ def main(calibration_matrix_path: str, monitor_mm=None, monitor_pixels=None, mod
      [0,-0.38421548,-0.92324345]])
     
     """
+    # R_matrix = np.asarray([[1,0,0],
+    #  [0,0.97019115,0.24234095],
+    #  [0,-0.24234095,0.97019115]])
+
     R_matrix = np.asarray([[1,0,0],
      [0,0.97019115,0.24234095],
      [0,-0.24234095,0.97019115]])
@@ -547,7 +553,8 @@ def main(calibration_matrix_path: str, monitor_mm=None, monitor_pixels=None, mod
     # T_vector = np.asarray([[45.48805879],[-181.13341445],[0]])
     
     # T_vector = np.asarray([[45.48805879],[1050.13341445],[0]]) # Scale the difference
-    T_vector = np.asarray([[45.48805879],[-950.13341445],[0]]) # USE THIS FOR SINGLE EYE (RIGHT)
+    # T_vector = np.asarray([[45.48805879],[-950.13341445],[0]]) # USE THIS FOR SINGLE EYE (RIGHT)
+    T_vector = np.asarray([[45.48805879],[-950.13341445],[0]]) # NEW_LAPTOP
     
     # ---- ROTATION AND TRANSLATION MATRICS FOR LOGITECH --------
     # T_vector = np.asarray([[53.24353881],[58.40413123],[-17.79401189]])
@@ -574,16 +581,25 @@ def main(calibration_matrix_path: str, monitor_mm=None, monitor_pixels=None, mod
         ToTensorV2()
     ])
 
-    if visualize_laser_pointer:
+    if visualize_background:
         cv2.namedWindow(WINDOW_NAME, cv2.WINDOW_NORMAL)
         cv2.setWindowProperty(WINDOW_NAME, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
     # plot_3d_scene = Plot3DScene(face_model, width_mm[0], height_mm[1], offset) if visualize_3d else None
     plot_3d_scene = Plot3DScene(face_model, monitor_mm[0], monitor_mm[1], 10) if visualize_3d else None
 
-    import csv
-    bg_imgs = ['1','2','3','4','5','6','7','8']
-    bg_imgsc = ['imagen0','imagen1','imagen2','imagen3','imagen4','imagen5','imagen6','imagen7','imagen8']
-    #bg_imgsc = ['imagen1']
+    # Cargarmos las imagenes que usaremos, ya sea para calibracion o los estimulos
+    if background=="stimulus":
+        folder = './Stimulus/'
+    elif background=="circulos":
+        folder = './circulos/'
+    else:
+        folder = './display_image/'
+    files = os.listdir(folder)
+    bg_imgs = []
+    for file in files:
+        bg_imgs.append(file)
+    bg_imgs.sort()
+    
     start_time = time.time()
     count = 0
 
@@ -694,36 +710,42 @@ def main(calibration_matrix_path: str, monitor_mm=None, monitor_pixels=None, mod
             # print("You pressed the", key, "key.")
             # ----------------------------------------------
 
-            # QUIZAS EL PROBLEMA TAMBIEN ESTA EN LA VISUALIZACION
-            if visualize_laser_pointer:
-                
-                #image = './Stimulus/'+str(bg_imgs[0])+'.png'
-                image = './circulos/'+str(bg_imgsc[0])+'.png'
-                gaze_path = f"./participants/p00/gazepoints{count}.csv"
-                background_image = cv2.imread(image)
-                background_image = cv2.resize(background_image, (monitor_pixels[0], monitor_pixels[1]))
-                
-                #display = np.ones((monitor_pixels[1], monitor_pixels[0], 3), np.float32)
+            if visualize_background:
+                if background=="display":
+                    background_image = np.ones((monitor_pixels[1], monitor_pixels[0], 3), np.float32)
+                    gaze_path = f"./participants/p00/gazepoints.csv"
+                elif background=="stimulus":
+                    image = './Stimulus/'+str(bg_imgs[0])
+                    gaze_path = f"./participants/p00/stimulus_gp{count}.csv"
+                    background_image = cv2.imread(image)
+                    background_image = cv2.resize(background_image, (monitor_pixels[0], monitor_pixels[1]))
+                elif background=="circulos":
+                    image = './circulos/'+str(bg_imgs[0])
+                    gaze_path = f"./participants/p00/circulo_gp{count}.csv"
+                    background_image = cv2.imread(image)
+                    background_image = cv2.resize(background_image, (monitor_pixels[0], monitor_pixels[1]))
+                else:
+                    print("Non background image entered. \nPlease enter a valid background image")
 
                 gaze_points.appendleft(point_on_screen)
 
                 add_gazepoint(point_on_screen, gaze_path) # Add to the excel
-
                 
-                for idx in range(1, len(gaze_points)):
-                    thickness = round((len(gaze_points) - idx) / len(gaze_points) * 5) + 1
-                    #cv2.line(display, gaze_points[idx - 1], gaze_points[idx], (0, 0, 255), thickness)
-                    cv2.line(background_image, gaze_points[idx - 1], gaze_points[idx], (0, 0, 255), thickness)
+                if laser:
+                    for idx in range(1, len(gaze_points)):
+                        thickness = round((len(gaze_points) - idx) / len(gaze_points) * 5) + 1
+                        cv2.line(background_image, gaze_points[idx - 1], gaze_points[idx], (0, 0, 255), thickness)
                 
                 if frame_idx % 2 == 0:
-                    #cv2.imshow(WINDOW_NAME, display)    
+                    # cv2.imshow(WINDOW_NAME, display)    
                     cv2.imshow(WINDOW_NAME, background_image)
 
-            
+
             elapsed_time = time.time() - start_time
             if elapsed_time >= 4:
-                #bg_imgs.pop(0)
-                bg_imgsc.pop(0)
+                if background=="stimulus" or background=="circulos":
+                    bg_imgs.pop(0)
+                
                 count += 1
                 start_time = time.time()
             
@@ -743,13 +765,15 @@ def main(calibration_matrix_path: str, monitor_mm=None, monitor_pixels=None, mod
 
 if __name__ == '__main__':
     parser = ArgumentParser()
-    parser.add_argument("--calibration_matrix_path", type=str, default='./calibration_matrix.yaml')
-    parser.add_argument("--model_path", type=str, default='./p00_ResNet50.ckpt')
-    parser.add_argument("--monitor_mm", type=str, default=None)
-    parser.add_argument("--monitor_pixels", type=str, default=None)
-    parser.add_argument("--visualize_preprocessing", type=bool, default=False)
-    parser.add_argument("--visualize_laser_pointer", type=bool, default=True)
-    parser.add_argument("--visualize_3d", type=bool, default=False)
+    parser.add_argument("--calibration_matrix_path", "-cp", type=str, default='./calibration_matrix.yaml')
+    parser.add_argument("--model_path", "-m", type=str, default='./p00_ResNet50.ckpt')
+    parser.add_argument("--monitor_mm", "-mm", type=str, default=None)
+    parser.add_argument("--monitor_pixels", "-mp", type=str, default=None)
+    parser.add_argument("--visualize_preprocessing", "-vp", type=bool, default=False)
+    parser.add_argument("--visualize_background", "-vb", type=bool, default=True)
+    parser.add_argument("--visualize_3d", "-v3d", type=bool, default=False)
+    parser.add_argument("--background", "-b", type=str, default=None)
+    parser.add_argument("--laser", "-l", type=bool, default=True)
     args = parser.parse_args()
 
     if args.monitor_mm is not None:
@@ -764,7 +788,7 @@ if __name__ == '__main__':
         
     model.eval()
 
-    main(args.calibration_matrix_path, args.monitor_mm, args.monitor_pixels, model, args.visualize_preprocessing, args.visualize_laser_pointer, args.visualize_3d)
+    main(args.calibration_matrix_path, args.monitor_mm, args.monitor_pixels, model, args.visualize_preprocessing, args.visualize_background, args.visualize_3d, args.background, args.laser)
 
 # FOR RUNING DEMO
 # python main.py --calibration_matrix_path=./calibration_matrix.yaml --model_path=./p00_ResNet50.ckpt
@@ -775,3 +799,7 @@ if __name__ == '__main__':
 # --visualize_laser_pointer=True
 # --visualize_3d=True
 # --visualize_preprocessing=True
+
+# ABREVIATED OPTIONS   
+# python main.py -vb=True -b=stimulus -l=True -cp=./calibration_matrix.yaml -m=./p00_ResNet50.ckpt
+# python main.py -b=circulos -cp=./calibration_matrix.yaml -m=./p00_ResNet50.ckpt

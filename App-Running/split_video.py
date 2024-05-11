@@ -5,7 +5,8 @@ import cv2
 # que luego sera ingresada dentro del cv2.VideoCapture
 # Asi no se ingresara manualmente
 
-capture = cv2.VideoCapture('C:/Users/Saul/Documents/gaze-tracking-pipeline-main/2023-05-31_122045.mp4')
+# capture = cv2.VideoCapture('C:/Users/Saul/Documents/gaze-tracking-pipeline-main/2023-05-31_122045.mp4')
+capture = cv2.VideoCapture('/home/harkay/Documents/Saul/YACHAY/Tesis\ Yachay/CODE/App-Running/2024-05-07_135440.mp4')
  
 frameNr = 0
  
@@ -14,7 +15,8 @@ while (True):
     success, frame = capture.read()
  
     if success:
-        cv2.imwrite(f'C:/Users/Saul/Documents/gaze-tracking-pipeline-main/frames2/frame_{frameNr}.png', frame)
+        # cv2.imwrite(f'C:/Users/Saul/Documents/gaze-tracking-pipeline-main/frames2/frame_{frameNr}.png', frame)
+        cv2.imwrite(f'/home/harkay/Documents/Saul/YACHAY/Tesis\ Yachay/CODE/App-Running/frames2/frame_{frameNr}.png', frame)
         # cv2.imwrite(f'C:/Users/Saul/Documents/gaze-tracking-pipeline-main/frames/frame_{frameNr}.png', frame)
  
     else:
